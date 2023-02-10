@@ -1,0 +1,50 @@
+pipeline {
+  agent any
+  options {
+    buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '5')
+    disableConcurrentBuilds()
+  }
+  stages {
+    stage ('Build (phkbzp)') {
+      steps {
+        sh script: 'mvn clean ', label: 'dwtu5j'
+        sh script: 'mvn test ', label: '6v3qdc'
+        sh script: 'mvn install -Dmaven.test.skip=true', label: 'rs0v11'
+      } //end steps
+    } // end stage Build
+    stage ('Deploy (udkjn6)') {
+      steps {
+        script {
+		docker.withTool('docker'){
+
+        
+            sh script: '''
+docker build -t artifactory.dagility.com/docker/github-branches-test-backend:latest .
+''', label: 'bcbeab'
+            sh script: '''
+docker push artifactory.dagility.com/docker/github-branches-test-backend:latest
+''', label: 'ffcaaf'
+        		}
+	}
+script { sh script: 'sleep 0.005', label: 'fmw4o7'}
+
+        sh script: '''
+ln -sf /usr/local/bin/helm3 /usr/local/bin/helm
+''', label: 'rlklcw'
+        sh script: 'helm package chart', label: 'ijhrf0'
+        withCredentials([usernamePassword(credentialsId: '', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+
+        script {
+            sh script: '''
+curl -u$USER:$PASS -T github-branches-test-backend-chart-0.1.0.tgz 'https://artifactory.dagility.com/artifactory/helm-local/github-branches-test-backend-chart-0.1.0.tgz' 
+''', label: 'abfeac'
+        } // end step group script
+script { sh script: 'sleep 0.005', label: '4j2evm'}
+} // end step group
+        sh script: 'helm repo add github-branches-test-backend https://artifactory.dagility.com/artifactory/helm ', label: 'rvsu01'
+        sh script: 'helm repo update', label: 'mesfnb'
+        sh script: 'helm upgrade github-branches-test-backend-deployment github-branches-test-backend/github-branches-test-backend-chart --install --values chart-values.yaml --namespace habitat-development --set ingress.hosts[0].host=github-branches-test-backend-habitat-development.dagility.com', label: 'ixxrui'
+      } //end steps
+    } // end stage Deploy
+  }
+}
